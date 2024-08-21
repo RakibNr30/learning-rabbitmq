@@ -1,0 +1,19 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13.6-alpine
+    ports:
+      # The standard AMQP protocol port
+      - "5672:5672"
+      # HTTP management UI
+      - "15672:15672"
+    environment:
+      AMQP_URL: "amqp://rabbitmq?connection_attempts=5&retry_delay=5"
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+    networks:
+      - rabbitmq_network
+
+networks:
+  # Declare out private network. We must declare one.
+  # Docker DNS to work, but otherwise, its default settings are fine.
+  rabbitmq_network: {}
