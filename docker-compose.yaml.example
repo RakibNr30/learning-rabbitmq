@@ -1,6 +1,8 @@
 services:
   rabbitmq:
+    container_name: rabbitmq
     image: rabbitmq:3.13.6-alpine
+    restart: always
     ports:
       # The standard AMQP protocol port
       - "5672:5672"
