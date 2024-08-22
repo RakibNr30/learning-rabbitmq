@@ -3,32 +3,29 @@ package com.dsi.exchange;
 import com.dsi.ConnectionManager;
 import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.CancelCallback;
-import com.rabbitmq.client.DeliverCallback;
 import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.DeliverCallback;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 
-public class DirectExchange {
+public class FanoutExchange {
 
-    private static final String MOBILE_Q = "q_mobile_d";
-    private static final String FAN_Q = "q_fan_d";
-    private static final String LIGHT_Q = "q_light_d";
+    private static final String MOBILE_Q = "q_mobile_fo";
+    private static final String FAN_Q = "q_fan_fo";
+    private static final String LIGHT_Q = "q_light_fo";
 
-    private static final String EXCHANGE_NAME = "ex_home_direct";
-
-    private static final String ROUTING_KEY_PD = "rk_personal_device";
-    private static final String ROUTING_KEY_HA = "rk_home_appliance";
+    private static final String EXCHANGE_NAME = "ex_home_fanout";
 
     public static void main(String[] args) throws IOException, TimeoutException {
-        DirectExchange.declareQueues();
-        DirectExchange.declareExchanges();
-        DirectExchange.declareBindings();
+        FanoutExchange.declareQueues();
+        FanoutExchange.declareExchanges();
+        FanoutExchange.declareBindings();
 
         Thread publish = new Thread(() -> {
             try {
-                DirectExchange.publishMessages();
+                FanoutExchange.publishMessages();
             } catch (IOException | TimeoutException e) {
                 System.err.println(e.getMessage());
             }
@@ -37,7 +34,7 @@ public class DirectExchange {
         Thread consume = new Thread(() -> {
             try {
                 Thread.sleep(10 * 1000); // waiting for 10 s
-                DirectExchange.consumeMessages();
+                FanoutExchange.consumeMessages();
             } catch (IOException | TimeoutException | InterruptedException e) {
                 System.err.println(e.getMessage());
             }
@@ -62,21 +59,21 @@ public class DirectExchange {
 
     private static void declareExchanges() throws IOException, TimeoutException {
         Channel channel = ConnectionManager.getConnection().createChannel();
-        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.DIRECT, true);
-        System.out.println("DirectExchange '" + EXCHANGE_NAME + "' Created.");
+        channel.exchangeDeclare(EXCHANGE_NAME, BuiltinExchangeType.FANOUT, true);
+        System.out.println("FanoutExchange '" + EXCHANGE_NAME + "' Created.");
     }
 
     private static void declareBindings() throws IOException, TimeoutException {
         Channel channel = ConnectionManager.getConnection().createChannel();
 
-        channel.queueBind(MOBILE_Q, EXCHANGE_NAME, ROUTING_KEY_PD);
-        System.out.println("Queue '" + MOBILE_Q + "' bound with exchange '" + EXCHANGE_NAME + "' via routing key '" + ROUTING_KEY_PD + "'.");
+        channel.queueBind(MOBILE_Q, EXCHANGE_NAME, "");
+        System.out.println("Queue '" + MOBILE_Q + "' bound with exchange '" + EXCHANGE_NAME + ".");
 
-        channel.queueBind(FAN_Q, EXCHANGE_NAME, ROUTING_KEY_HA);
-        System.out.println("Queue '" + FAN_Q + "' bound with exchange '" + EXCHANGE_NAME + "' via routing key '" + ROUTING_KEY_HA + "'.");
+        channel.queueBind(FAN_Q, EXCHANGE_NAME, "");
+        System.out.println("Queue '" + FAN_Q + "' bound with exchange '" + EXCHANGE_NAME + ".");
 
-        channel.queueBind(LIGHT_Q, EXCHANGE_NAME, ROUTING_KEY_HA);
-        System.out.println("Queue '" + LIGHT_Q + "' bound with exchange '" + EXCHANGE_NAME + "' via routing key '" + ROUTING_KEY_HA + "'.");
+        channel.queueBind(LIGHT_Q, EXCHANGE_NAME, "");
+        System.out.println("Queue '" + LIGHT_Q + "' bound with exchange '" + EXCHANGE_NAME + ".");
     }
 
     private static void publishMessages() throws IOException, TimeoutException {
@@ -84,12 +81,8 @@ public class DirectExchange {
 
         System.out.println("[*] Waiting for publish. To exit press CTRL+C");
 
-        String message = "Turn on Home Appliances.";
-        channel.basicPublish(EXCHANGE_NAME, ROUTING_KEY_HA, null, message.getBytes(StandardCharsets.UTF_8));
-        System.out.println("[x] Sent '" + message + "'");
-
-        message = "Turn off Personal Devices.";
-        channel.basicPublish(EXCHANGE_NAME, ROUTING_KEY_PD, null, message.getBytes(StandardCharsets.UTF_8));
+        String message = "Turn all devices.";
+        channel.basicPublish(EXCHANGE_NAME, "", null, message.getBytes(StandardCharsets.UTF_8));
         System.out.println("[x] Sent '" + message + "'");
     }
 
