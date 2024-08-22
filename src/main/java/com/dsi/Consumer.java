@@ -8,9 +8,7 @@ import java.util.concurrent.TimeoutException;
 
 public class Consumer {
     public static void main(String[] args) throws IOException, TimeoutException {
-        ConnectionFactory factory = RabbitMQUtils.getConnectionFactory();
-
-        try (Connection connection = factory.newConnection(); Channel channel = connection.createChannel()) {
+        try (Channel channel = ConnectionManager.getConnection().createChannel()) {
             System.out.println("[*] Waiting for messages. To exit press CTRL+C");
 
             DeliverCallback deliverCallback = (consumerTag, delivery) -> {
@@ -22,7 +20,7 @@ public class Consumer {
                 System.out.println("[x] Cancelled '" + consumerTag + "'");
             };
 
-            channel.basicConsume(RabbitMQUtils.getDefaultQueue(), true, deliverCallback, cancelCallback);
+            channel.basicConsume(Constants.DEFAULT_QUEUE, true, deliverCallback, cancelCallback);
 
             synchronized (Consumer.class) {
                 try {
